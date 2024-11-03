@@ -1,5 +1,6 @@
 package nextstep.app.ui;
 
+import nextstep.app.domain.Member;
 import nextstep.app.domain.MemberRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,11 +23,18 @@ public class LoginController {
 
     @PostMapping("/login")
     public ResponseEntity<Void> login(HttpServletRequest request, HttpSession session) {
-        return ResponseEntity.ok().build();
-    }
+        String username = request.getParameter("username");
+        String password = request.getParameter("password");
+        if (username == null || password == null) {
+            throw new AuthenticationException();
+        }
+        Member member = memberRepository.findByEmail(username)
+                .orElseThrow(AuthenticationException::new);
+        if (!member.matchPassword(password)) {
+            throw new AuthenticationException();
+        }
 
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<Void> handleAuthenticationException() {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        session.setAttribute(SPRING_SECURITY_CONTEXT_KEY, member);
+        return ResponseEntity.ok().build();
     }
 }

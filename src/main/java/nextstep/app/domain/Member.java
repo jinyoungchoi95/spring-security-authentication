@@ -13,6 +13,10 @@ public class Member {
         this.imageUrl = imageUrl;
     }
 
+    public boolean matchPassword(String password) {
+        return this.password.equals(password);
+    }
+
     public String getEmail() {
         return email;
     }
