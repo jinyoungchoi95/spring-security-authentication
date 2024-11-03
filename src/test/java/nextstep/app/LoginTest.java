@@ -2,6 +2,7 @@ package nextstep.app;
 
 import nextstep.app.domain.Member;
 import nextstep.app.infrastructure.InmemoryMemberRepository;
+import nextstep.security.context.SecurityContextHolder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,9 +13,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpSession;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,9 +40,8 @@ class LoginTest {
 
         loginResponse.andExpect(status().isOk());
 
-        HttpSession session = loginResponse.andReturn().getRequest().getSession();
-        assertThat(session).isNotNull();
-        assertThat(session.getAttribute("SPRING_SECURITY_CONTEXT")).isNotNull();
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).isEqualTo("a@a.com");
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getCredentials()).isEqualTo("password");
     }
 
     @DisplayName("로그인 실패 - 사용자 없음")
@@ -64,5 +66,28 @@ class LoginTest {
         );
 
         response.andExpect(status().isUnauthorized());
+    }
+
+    @DisplayName("로그인 후 세션을 통해 회원 목록 조회")
+    @Test
+    void login_after_members() throws Exception {
+        ResultActions loginResponse = mockMvc.perform(post("/login")
+                .param("username", TEST_MEMBER.getEmail())
+                .param("password", TEST_MEMBER.getPassword())
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        );
+
+        loginResponse.andExpect(status().isOk());
+
+        MvcResult loginResult = loginResponse.andReturn();
+        HttpSession session = loginResult.getRequest().getSession();
+        String sessionId = session.getId();
+
+        ResultActions membersResponse = mockMvc.perform(get("/member")
+                .cookie(new Cookie("JSESSIONID", sessionId))
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+        );
+
+        membersResponse.andExpect(status().isOk());
     }
 }

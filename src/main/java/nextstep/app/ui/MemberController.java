@@ -23,4 +23,9 @@ public class MemberController {
         return ResponseEntity.ok(members);
     }
 
+    @GetMapping("/member")
+    public ResponseEntity<List<Member>> info() {
+        List<Member> members = memberRepository.findAll();
+        return ResponseEntity.ok(members);
+    }
 }
