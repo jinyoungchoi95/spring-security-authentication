@@ -1,10 +1,14 @@
 package nextstep.app.config;
 
-import nextstep.security.interceptor.BasicAuthenticationInterceptor;
-import nextstep.security.interceptor.FormLoginInterceptor;
+import nextstep.security.filter.BasicAuthenticationFilter;
+import nextstep.security.filter.FormLoginAuthenticationFilter;
 import nextstep.security.userdetails.UserDetailsService;
+import nextstep.security.web.DefaultSecurityFilterChain;
+import nextstep.security.web.FilterChainProxy;
+import nextstep.security.web.SecurityFilterChain;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.filter.DelegatingFilterProxy;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.servlet.http.HttpSession;
@@ -20,11 +24,16 @@ public class WebConfig implements WebMvcConfigurer {
         this.userDetailsService = userDetailsService;
     }
 
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new BasicAuthenticationInterceptor(userDetailsService))
-                .addPathPatterns("/members");
-        registry.addInterceptor(new FormLoginInterceptor(userDetailsService, httpSession))
-                .addPathPatterns("/login");
+    @Bean
+    public DelegatingFilterProxy delegatingFilterProxy() {
+        SecurityFilterChain loginFilterChain = DefaultSecurityFilterChain.of(
+                "/login",
+                new FormLoginAuthenticationFilter(userDetailsService, httpSession)
+        );
+        SecurityFilterChain basicFilterChain = DefaultSecurityFilterChain.of(
+                "/members",
+                new BasicAuthenticationFilter(userDetailsService)
+        );
+        return new DelegatingFilterProxy(new FilterChainProxy(loginFilterChain, basicFilterChain));
     }
 }
