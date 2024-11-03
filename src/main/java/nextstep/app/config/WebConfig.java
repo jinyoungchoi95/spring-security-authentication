@@ -11,16 +11,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.filter.DelegatingFilterProxy;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import javax.servlet.http.HttpSession;
-
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    private final HttpSession httpSession;
     private final UserDetailsService userDetailsService;
 
-    public WebConfig(HttpSession httpSession, UserDetailsService userDetailsService) {
-        this.httpSession = httpSession;
+    public WebConfig(UserDetailsService userDetailsService) {
         this.userDetailsService = userDetailsService;
     }
 
@@ -28,7 +24,7 @@ public class WebConfig implements WebMvcConfigurer {
     public DelegatingFilterProxy delegatingFilterProxy() {
         SecurityFilterChain loginFilterChain = DefaultSecurityFilterChain.of(
                 "/login",
-                new FormLoginAuthenticationFilter(userDetailsService, httpSession)
+                new FormLoginAuthenticationFilter(userDetailsService)
         );
         SecurityFilterChain basicFilterChain = DefaultSecurityFilterChain.of(
                 "/members",

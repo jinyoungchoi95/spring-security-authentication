@@ -1,6 +1,9 @@
 package nextstep.security.filter;
 
 import nextstep.app.ui.AuthenticationException;
+import nextstep.security.authentication.AuthenticationToken;
+import nextstep.security.context.SecurityContext;
+import nextstep.security.context.SecurityContextHolder;
 import nextstep.security.userdetails.UserDetails;
 import nextstep.security.userdetails.UserDetailsService;
 import org.springframework.web.filter.GenericFilterBean;
@@ -11,19 +14,14 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.io.IOException;
 
 public class FormLoginAuthenticationFilter extends GenericFilterBean {
 
-    private static final String SPRING_SECURITY_CONTEXT_KEY = "SPRING_SECURITY_CONTEXT";
-
     private final UserDetailsService userDetailsService;
-    private final HttpSession httpSession;
 
-    public FormLoginAuthenticationFilter(UserDetailsService userDetailsService, HttpSession httpSession) {
+    public FormLoginAuthenticationFilter(UserDetailsService userDetailsService) {
         this.userDetailsService = userDetailsService;
-        this.httpSession = httpSession;
     }
 
     @Override
@@ -45,7 +43,8 @@ public class FormLoginAuthenticationFilter extends GenericFilterBean {
                 return;
             }
 
-            httpSession.setAttribute(SPRING_SECURITY_CONTEXT_KEY, userDetails);
+            SecurityContext securityContext = SecurityContextHolder.getContext();
+            securityContext.setAuthentication(new AuthenticationToken(userDetails.getUsername(), userDetails.getPassword()));
         } catch (AuthenticationException e) {
             httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
