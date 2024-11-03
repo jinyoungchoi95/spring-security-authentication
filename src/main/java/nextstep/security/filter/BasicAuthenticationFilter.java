@@ -1,9 +1,7 @@
 package nextstep.security.filter;
 
 import nextstep.app.ui.AuthenticationException;
-import nextstep.security.authentication.Authentication;
-import nextstep.security.authentication.BasicAuthentication;
-import nextstep.security.userdetails.UserDetails;
+import nextstep.security.authentication.*;
 import nextstep.security.userdetails.UserDetailsService;
 import org.springframework.web.filter.GenericFilterBean;
 
@@ -19,10 +17,14 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 public class BasicAuthenticationFilter extends GenericFilterBean {
 
-    private final UserDetailsService userDetailsService;
+    private final AuthenticationManager authenticationManager;
+
+    public BasicAuthenticationFilter(AuthenticationManager authenticationManager) {
+        this.authenticationManager = authenticationManager;
+    }
 
     public BasicAuthenticationFilter(UserDetailsService userDetailsService) {
-        this.userDetailsService = userDetailsService;
+        this(new ProviderManager(new DaoAuthenticationProvider(userDetailsService)));
     }
 
     @Override
@@ -31,12 +33,8 @@ public class BasicAuthenticationFilter extends GenericFilterBean {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
         try {
-            Authentication basicAuthentication = BasicAuthentication.from(httpRequest.getHeader(AUTHORIZATION));
-            UserDetails userDetails = userDetailsService.loadUserByUsername(basicAuthentication.getPrincipal());
-
-            if (!userDetails.getPassword().equals(basicAuthentication.getCredentials())) {
-                httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            }
+            Authentication basicTokenAuthentication = new BasicTokenAuthentication(httpRequest.getHeader(AUTHORIZATION));
+            authenticationManager.authenticate(basicTokenAuthentication);
         } catch (AuthenticationException e) {
             httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;

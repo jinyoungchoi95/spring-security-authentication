@@ -6,32 +6,13 @@ import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class BasicAuthentication implements Authentication {
+public class BasicTokenAuthenticationConverter {
 
     private static final Pattern TOKEN_PATTERN = Pattern.compile("^Basic (.+)$");
     private static final String TOKEN_SPLIT_REGEX = ":";
     private static final int TOKEN_LENGTH = 2;
     private static final int TOKEN_EMAIL_INDEX = 0;
     private static final int TOKEN_PASSWORD_INDEX = 1;
-
-    private final String principal;
-    private final String credentials;
-
-    public BasicAuthentication(String principal, String credentials) {
-        this.principal = principal;
-        this.credentials = credentials;
-    }
-
-    public static BasicAuthentication from(String authorizationHeader) {
-        if (authorizationHeader == null) {
-            throw new AuthenticationException();
-        }
-        String[] parts = parseToken(authorizationHeader);
-        if (parts.length != TOKEN_LENGTH) {
-            throw new AuthenticationException();
-        }
-        return new BasicAuthentication(parts[TOKEN_EMAIL_INDEX], parts[TOKEN_PASSWORD_INDEX]);
-    }
 
     private static String[] parseToken(String authorizationHeader) {
         Matcher matcher = TOKEN_PATTERN.matcher(authorizationHeader);
@@ -44,14 +25,14 @@ public class BasicAuthentication implements Authentication {
         return decodedCredentials.split(TOKEN_SPLIT_REGEX, TOKEN_LENGTH);
     }
 
-
-    @Override
-    public String getPrincipal() {
-        return principal;
-    }
-
-    @Override
-    public String getCredentials() {
-        return credentials;
+    public Authentication convert(BasicTokenAuthentication authentication) {
+        if (authentication.getToken() == null) {
+            throw new AuthenticationException();
+        }
+        String[] parts = parseToken(authentication.getToken());
+        if (parts.length != TOKEN_LENGTH) {
+            throw new AuthenticationException();
+        }
+        return new AuthenticationToken(parts[TOKEN_EMAIL_INDEX], parts[TOKEN_PASSWORD_INDEX]);
     }
 }
